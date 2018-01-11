@@ -3,6 +3,7 @@
 function AnimateWalker(object, settings) {
     this.$walker = object.$el;
     this.reverse = false;
+    
     this.easing = null;
 
     this.container = this.$walker.parent();
