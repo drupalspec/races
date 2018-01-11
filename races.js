@@ -3,7 +3,6 @@
 function AnimateWalker(object, settings) {
     this.$walker = object.$el;
     this.reverse = false;
-    
     this.easing = null;
 
     this.container = this.$walker.parent();
@@ -14,11 +13,13 @@ function AnimateWalker(object, settings) {
     this.pathAnimator = new PathAnimator(this.path);
 }
 
+
 AnimateWalker.prototype = {
     _getTransformStyle: function (x, y) {
 
         var left = this.container.width() / this.raceInfo.raceWidth * x;
         var top = this.container.height() / this.raceInfo.raceHeight * y;
+
 
         return {
             'transform': 'translate(' + left + 'px,' + top + 'px)',
@@ -27,14 +28,28 @@ AnimateWalker.prototype = {
             '-moz-transform': 'translate(' + left + 'px,' + top + 'px)'
         }
     },
+
+
     _getPositionStyle: function (x, y) {
-        var left = (100 * x / this.raceInfo.raceWidth).toFixed(3);
-        var top = (100 * y / this.raceInfo.raceHeight).toFixed(3);
-        return {
-            left: left + '%',
-            top: top + '%'
+        if(this.raceInfo.raceType == 'vertical') {
+            var left = x + 8;
+            var top = (110 * y / this.raceInfo.raceHeight);
+            return {
+                left: left + '%',
+                top: top + '%',
+                height: 100 - top + '%'
+            }
+        } else {
+            var left = (100 * x / this.raceInfo.raceWidth).toFixed(3);
+            var top = (100 * y / this.raceInfo.raceHeight).toFixed(3);
+            return {
+                left: left + '%',
+                top: top + '%'
+            }
         }
+        
     },
+
     ready: function () {
         this.$walker.show();
         this.step(this.pathAnimator.pointAt(this.startOffset));
@@ -47,29 +62,28 @@ AnimateWalker.prototype = {
 
     // Execute every "frame"
     step: function (point) {
-        this.$walker.css(this._getTransformStyle(point.x, point.y));
-        // this.$walker.css(this._getPositionStyle(point.x, point.y));
+        // this.$walker.css(this._getTransformStyle(point.x, point.y));
+        this.$walker.css(this._getPositionStyle(this.leftOffset, point.y));
     },
 
     // Restart animation once it was finished
     finishCallback: function () {
+        console.log('Finish');
         if(this.raceInfo.raceLapBlocker) {
             return;
         }
         this.startOffset = 0;
         this.start();
-    },
-
-    // Resume animation from the last completed percentage (also updates the animation with new settings' values)
-    resume: function () {
-        this.pathAnimator.start(this.speed, this.step, this.reverse, this.pathAnimator.percent, this.finish, this.easing);
     }
+
+
 };
 
 function initRace(classSelector, options) {
     if (typeof options !== 'object' || options === null) {
         options = {};
     }
+
 
     var DELAY_TIME = options.raceStartDelay * 1000 || 2000;
     var RACE_LAP_TIME = options.raceLapTime || 5; //sec
@@ -119,7 +133,7 @@ function initRace(classSelector, options) {
     // in that case we must transform array to [5,4,3,3,3] before sort
 
     function normalizeObjectScore(array) {
-        array.sort(_sortArrayZA);
+        // array.sort(_sortArrayZA);
         var maxValue = array[array.length - 1].score;
 
         if (maxValue > array.length) {
@@ -151,7 +165,7 @@ function initRace(classSelector, options) {
 
         valuesGreaterThan100 = valuesGreaterThan100.map(function (x, i) {
             if (x.score >= 100) {
-                x.score = 100 + (topLength - i)/3 + 1;
+                x.score = 100 + (topLength - i)/3;
             }
             return x;
         });
@@ -169,6 +183,7 @@ function initRace(classSelector, options) {
             return carsArray;
         }
 
+
         var maxScore = winnerInTop[0].score;
         return carsArray.map(function (x) {
             x.score = parseInt(100 * x.score / maxScore, 10);
@@ -183,7 +198,8 @@ function initRace(classSelector, options) {
         var valuesGreaterThan100 = array.filter(function (x) { return x.score >= 100; });
         var sortedValuesGreaterThan100 = _spreadArrayUp(valuesGreaterThan100);
         var result = sortedValuesLessThan100.concat(sortedValuesGreaterThan100);
-        result.sort(_sortArrayZA);
+        // result.sort(_sortArrayZA);
+
         return result;
     }
 
@@ -230,7 +246,7 @@ function initRace(classSelector, options) {
     function setStartOffsets(carsArray) {
         var carsTotal = carsArray.length;
         return carsArray.map(function (x, i) {
-            var startOffsetInPercents = (carsTotal - i) * 0.4;
+            var startOffsetInPercents = (carsTotal - i) * 0;
             x.startOffset = startOffsetInPercents;
             return x;
         });
@@ -268,6 +284,7 @@ function initRace(classSelector, options) {
             walkers[i] = new AnimateWalker(car, {
                 path: _getRacePath(i),
                 speed: car.speed,
+                leftOffset: i * 7.5,
                 startOffset: car.startOffset,
                 raceInfo: options
             });
@@ -304,7 +321,7 @@ function initRace(classSelector, options) {
         }, DELAY_TIME + RACE_LAP_TIME * RACE_LAPS * 1000);
     }
 
-    var prepareRace = sequence(getElements, getObjectsToComparsion, normalizeObjectScore, configureWinnersSettings, spreadCars, setStartOffsets, setSpeed, generateWalkers, initRace);
+    var prepareRace = sequence(getElements, getObjectsToComparsion, normalizeObjectScore, configureWinnersSettings, setStartOffsets, setSpeed, generateWalkers, initRace);
 
     prepareRace(classSelector);
 
